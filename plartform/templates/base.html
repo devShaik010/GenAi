@@ -1,0 +1,89 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <title>Document</title>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+    <div class="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full">
+        <h2 class="text-xl font-bold mb-4 text-center">Upload Your Image</h2>
+        <form action="api/send-text/" method="post" enctype="multipart/form-data" id="uploadForm">
+            {% csrf_token %}
+            <!-- <div class="mb-4">
+                <input type="text" name="val" placeholder="Enter your text" required class="border rounded-md w-full p-2">
+            </div> -->
+            <div class="mb-4">
+                <input type="file" name="image" accept="image/*" required id="imageInput" class="border rounded-md w-full p-2">
+            </div>
+            <div id="imagePreview" class="mb-4 hidden">
+                <img id="previewImg" src="" alt="Image Preview" class="rounded-md w-full">
+            </div>
+            <div class="text-center mb-4">
+                <input type="submit" value="Submit" class="bg-blue-500 text-white rounded-md px-4 py-2 hover:bg-blue-600 cursor-pointer" id="submitBtn">
+            </div>
+           
+            <div id="loading" class="hidden text-center">Loading...</div>
+            <div id="response" class="mt-4"></div>
+        </form>
+
+        
+    </div>
+    <a href="new" class="btn btn-lg btn-danger">New</a>
+    
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const loading = document.getElementById('loading');
+        const responseDiv = document.getElementById('response');
+        const submitBtn = document.getElementById('submitBtn');
+
+        imageInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImg.src = e.target.result;
+                    imagePreview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('uploadForm').addEventListener('submit', (event) => {
+            event.preventDefault();  
+            loading.classList.remove('hidden');  
+            responseDiv.innerHTML = '';  
+
+            const formData = new FormData(event.target);
+
+            fetch(event.target.action, {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.classList.add('hidden');  
+                if (data.status === 'success') {
+                    responseDiv.innerHTML = `
+                        <h3 class="font-bold">Received Text:</h3>
+                        <p>${data.received_text}</p>
+                        <h3 class="font-bold mt-2">Generated Content:</h3>
+                        <p>${data.generated_content}</p>
+                        <img src="${data.image_url}" alt="Uploaded Image" class="rounded-md mt-2 w-full">
+                    `;
+                } else {
+                    responseDiv.innerHTML = `<p class="text-red-500">${data.message}</p>`;
+                }
+            })
+            .catch(error => {
+                loading.classList.add('hidden');  
+                responseDiv.innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
+            });
+        });
+    </script>
+</body>
+</html>
